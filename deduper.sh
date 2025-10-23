@@ -8,8 +8,7 @@
 #SBATCH --output=output_%j.log
 #SBATCH --error=error_%j.log
 
+samfile="SAM-files/sorted_C1_SE.sam"
+umis="STL96.txt"
 
-samfile="/projects/bgmp/shared/deduper/C1_SE_uniqAlign.sam"
-umis="/projects/bgmp/joshkram/bioinfo/Bi624/Deduper-j0shkramer"
-
-/usr/bin/time -v python3 kramer_deduper.py -f $samfile -u $umis -o "example_dedup.sam"
+/usr/bin/time -v ./kramer_deduper.py -f $samfile -u $umis -o "example_dedup.sam"

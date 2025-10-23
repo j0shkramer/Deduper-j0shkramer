@@ -6,6 +6,10 @@
 import argparse
 import re
 
+header_lines = 0
+dups_removed = 0
+wrong_umis = 0
+unique_reads = 0
 
 def get_args():
     parser = argparse.ArgumentParser(description="A program to take a SamTools sorted single-end SAM file and remove PCR duplicates")
@@ -36,7 +40,7 @@ def extractIdentifers(samFileLine):
     samfilelist = samFileLine.split("\t")
     qname = samfilelist[0]
     flag = int(samfilelist[1])
-    chrom = int(samfilelist[2])
+    chrom = samfilelist[2]
     startpos = int(samfilelist[3])
     cigar = samfilelist[5]
     seq_length = len(samfilelist[9])
@@ -120,17 +124,18 @@ with open(args.file, "r") as oldSAM, open(args.outfile, "w") as newSAM:
     curr_chrom = ""
     for line in oldSAM:
         curr_line = line.strip()
-        print(curr_line)
         if curr_line[0] == "@":
             # indicates that this is a header file
             newSAM.write(curr_line)
             newSAM.write("\n")
+            header_lines += 1
         else:
             qname, flag, chrom, startpos, cigar, seq_length = extractIdentifers(curr_line)
             # get the current read's unique molecular identifier
             umi = extractUMI(qname)
             # Ignore cases where UMI is not in known set
             if umi not in umi_set:
+                wrong_umis += 1
                 continue
             else:
                 # indicates we have advanced down to a new chromosome in the SAM file
@@ -144,8 +149,12 @@ with open(args.file, "r") as oldSAM, open(args.outfile, "w") as newSAM:
                 # UMI, Chrom, strand, 5' start position, sequence length
                 curr_read = (umi, chrom, strandedness, five_prime_start_pos, seq_length)
                 if curr_read in seen_reads:
+                    dups_removed += 1
                     continue
                 else:
+                    unique_reads += 1
                     newSAM.write(curr_line)
                     newSAM.write("\n")
                     seen_reads.add(curr_read)
+
+print(f'Header Lines: {header_lines}, Unique Reads: {unique_reads}, Wrong UMIs: {wrong_umis}, Duplicates Removed: {dups_removed}')
