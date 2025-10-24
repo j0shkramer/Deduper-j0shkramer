@@ -90,6 +90,7 @@ def getFivePrimeStart(STARTPOS, CIGAR, STRANDEDNESS):
             elif char.isalpha() and char == "S" and characters_seen == 0:
                 five_prime_start_pos -= int(nums_cigar[0])
                 return five_prime_start_pos
+# ISSUE IS HERE?
     elif STRANDEDNESS == "-":
         characters_seen = 0
         for char in CIGAR:
@@ -146,8 +147,9 @@ with open(args.file, "r") as oldSAM, open(args.outfile, "w") as newSAM:
                 strandedness = getStrandedness(flag)
                 # Get the current read's 5' start position
                 five_prime_start_pos = getFivePrimeStart(startpos, cigar, strandedness)
-                # UMI, Chrom, strand, 5' start position, sequence length
-                curr_read = (umi, chrom, strandedness, five_prime_start_pos, seq_length)
+                # UMI, Chrom, strand, 5' start position, sequence length (optional, do you want to consider it?)
+                # curr_read = (umi, chrom, strandedness, five_prime_start_pos, seq_length)
+                curr_read = (umi, chrom, strandedness, five_prime_start_pos)
                 if curr_read in seen_reads:
                     dups_removed += 1
                     continue
