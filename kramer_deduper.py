@@ -90,7 +90,6 @@ def getFivePrimeStart(STARTPOS, CIGAR, STRANDEDNESS):
             elif char.isalpha() and char == "S" and characters_seen == 0:
                 five_prime_start_pos -= int(nums_cigar[0])
                 return five_prime_start_pos
-# ISSUE IS HERE?
     elif STRANDEDNESS == "-":
         characters_seen = 0
         for char in CIGAR:
