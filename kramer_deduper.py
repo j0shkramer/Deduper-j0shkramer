@@ -6,10 +6,10 @@
 import argparse
 import re
 
-header_lines = 0
-dups_removed = 0
-wrong_umis = 0
-unique_reads = 0
+header_lines: int = 0
+dups_removed: int = 0
+wrong_umis: int = 0
+unique_reads: int = 0
 
 def get_args():
     parser = argparse.ArgumentParser(description="A program to take a SamTools sorted single-end SAM file and remove PCR duplicates")
@@ -33,7 +33,7 @@ def extractUMI(QNAME) -> str:
     return UMI
 
 # Columns: QNAME, FLAG, RNAME, POS, MAPQ, CIGAR, RNEXT, PNEXT, TLEN, SEQ, QUAL
-def extractIdentifers(samFileLine):
+def extractIdentifers(samFileLine) -> tuple:
     """
     Extract the RNAME, bitwise flag, cigar string, chromosome, start position, and sequence from a SAM file line 
     """
@@ -46,7 +46,7 @@ def extractIdentifers(samFileLine):
     seq_length = len(samfilelist[9])
     return qname, flag, chrom, startpos, cigar, seq_length
 
-def generateUMISet(umifile):
+def generateUMISet(umifile) -> set:
     """
     Input the UMI file, and generate a set of all the UMIs for future checking"
     """
@@ -57,7 +57,7 @@ def generateUMISet(umifile):
             umi_set.add(curr_umi)
     return umi_set
 
-def getStrandedness(FLAG):
+def getStrandedness(FLAG) -> str:
     """
     Input the bitwise flag and determine the strandedness of the read
     """
@@ -121,7 +121,7 @@ with open(args.file, "r") as oldSAM, open(args.outfile, "w") as newSAM:
     # A set that will store seen reads, it will be cleared everytime we are on a new chromosome
     seen_reads = set()
     # holds the current chrom that we are on, needed for reseting the set above
-    curr_chrom = ""
+    curr_chrom: str = ""
     for line in oldSAM:
         curr_line = line.strip()
         if curr_line[0] == "@":
