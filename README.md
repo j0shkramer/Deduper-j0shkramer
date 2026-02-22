@@ -1,7 +1,36 @@
 # Deduper
 
-When sequences undergo PCR, there is a possibility that a template molecule is sequenced multiple times. This will artificially inflate the counts of certain reads when, in reality, their counts are not this high. If they are not removed, the information taken from the data is incorrect and can lead to improper conclusions. PCR duplicates can arise when two copies of the same original molecule get into different beads or primer lawns (depending on the sequencing technology). PCR duplicates can be identified by locating molecules that have the same UMI, 5' start position, strandness, and are located on the same chromosome.
+PCR amplification can cause a single template molecule to be sequenced multiple times. This leads to **PCR duplicates**, which artificially inflate read counts and can bias downstream analyses.
+
+PCR duplicates typically occur when multiple copies of the same original molecule enter different beads or primer lawns during sequencing. These duplicates can be identified because they share all of the following:
+
+- **Unique Molecular Identifier (UMI)**
+- **5′ start position**
+- **Strand**
+- **Chromosome**
+
+Removing duplicates ensures that read counts reflect true biological abundance rather than PCR artifacts.
+
+---
+
+## Requirements
+
+- `python ≥ 3.10` environment
+
+**SAM File**
+
+- Should be previously sorted using Samtools
+
+**File Containing UMIs**
+
+- Should be a text file, with each known UMI listed on its own line
+
+---
 
 ## Running Deduper
 
-python3 kramer_deduper.py -f (Input SAMtools-sorted SAM file) -u (File that contains all known UMIs) -o (Name of file output)
+```bash
+python3 kramer_deduper.py \
+    -f <input SAMtools-sorted SAM file> \
+    -u <file containing all known UMIs> \
+    -o <output file name>
