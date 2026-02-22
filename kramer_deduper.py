@@ -1,24 +1,19 @@
 #!/usr/bin/env python
 
-# Documentation for a SAM file
-# https://samtools.github.io/hts-specs/SAMv1.pdf
-
-import argparse
-import re
-
-header_lines: int = 0
-dups_removed: int = 0
-wrong_umis: int = 0
-unique_reads: int = 0
+import argparse, re, sys
 
 def get_args():
     parser = argparse.ArgumentParser(description="A program to take a SamTools sorted single-end SAM file and remove PCR duplicates")
     parser.add_argument("-f", "--file", help="Input SamTools-sorted single-end SAM file")
     parser.add_argument("-o", "--outfile", help="Name of the output deduplicated SAM file")
     parser.add_argument("-u", "--umi", help="File that contains all known UMIs in the SAM file, no header")
-    return parser.parse_args()
 
-args = get_args()
+    args = get_args()
+
+    if not args.file.lower().endswith(".sam"):
+        sys.exit(f'Error: Input file {args.file} must be a SAM file')
+
+    return parser.parse_args()
 
 #########################
 #   HELPER FUNCTIONS    #
@@ -114,48 +109,62 @@ def getFivePrimeStart(STARTPOS, CIGAR, STRANDEDNESS):
 #   MAIN BODY    #
 ##################
 
-# Store all of the known umis
-umi_set = generateUMISet(args.umi)
+def main():
 
-with open(args.file, "r") as oldSAM, open(args.outfile, "w") as newSAM: 
-    # A set that will store seen reads, it will be cleared everytime we are on a new chromosome
-    seen_reads = set()
-    # holds the current chrom that we are on, needed for reseting the set above
-    curr_chrom: str = ""
-    for line in oldSAM:
-        curr_line = line.strip()
-        if curr_line[0] == "@":
-            # indicates that this is a header file
-            newSAM.write(curr_line)
-            newSAM.write("\n")
-            header_lines += 1
-        else:
-            qname, flag, chrom, startpos, cigar, seq_length = extractIdentifers(curr_line)
-            # get the current read's unique molecular identifier
-            umi = extractUMI(qname)
-            # Ignore cases where UMI is not in known set
-            if umi not in umi_set:
-                wrong_umis += 1
-                continue
+    args = get_args()
+
+    header_lines: int = 0
+    dups_removed: int = 0
+    wrong_umis: int = 0
+    unique_reads: int = 0
+
+    # Store all of the known umis
+    umi_set = generateUMISet(args.umi)
+
+    with open(args.file, "r") as oldSAM, open(args.outfile, "w") as newSAM: 
+        # A set that will store seen reads, it will be cleared everytime we are on a new chromosome
+        seen_reads = set()
+        # holds the current chrom that we are on, needed for reseting the set above
+        curr_chrom: str = ""
+        for line in oldSAM:
+            curr_line = line.strip()
+            if curr_line[0] == "@":
+                # indicates that this is a header file
+                newSAM.write(curr_line)
+                newSAM.write("\n")
+                header_lines += 1
             else:
-                # indicates we have advanced down to a new chromosome in the SAM file
-                if chrom != curr_chrom:
-                    curr_chrom = chrom
-                    seen_reads.clear()
-                # "+" when on forward strand, "-" when on reverse
-                strandedness = getStrandedness(flag)
-                # Get the current read's 5' start position
-                five_prime_start_pos = getFivePrimeStart(startpos, cigar, strandedness)
-                # UMI, Chrom, strand, 5' start position, sequence length (optional, do you want to consider it?)
-                # curr_read = (umi, chrom, strandedness, five_prime_start_pos, seq_length)
-                curr_read = (umi, chrom, strandedness, five_prime_start_pos)
-                if curr_read in seen_reads:
-                    dups_removed += 1
+                qname, flag, chrom, startpos, cigar, seq_length = extractIdentifers(curr_line)
+                # get the current read's unique molecular identifier
+                umi = extractUMI(qname)
+                # Ignore cases where UMI is not in known set
+                if umi not in umi_set:
+                    wrong_umis += 1
                     continue
                 else:
-                    unique_reads += 1
-                    newSAM.write(curr_line)
-                    newSAM.write("\n")
-                    seen_reads.add(curr_read)
+                    # indicates we have advanced down to a new chromosome in the SAM file
+                    if chrom != curr_chrom:
+                        curr_chrom = chrom
+                        seen_reads.clear()
+                    # "+" when on forward strand, "-" when on reverse
+                    strandedness = getStrandedness(flag)
+                    # Get the current read's 5' start position
+                    five_prime_start_pos = getFivePrimeStart(startpos, cigar, strandedness)
+                    # UMI, Chrom, strand, 5' start position, sequence length (optional, do you want to consider it?)
+                    # curr_read = (umi, chrom, strandedness, five_prime_start_pos, seq_length)
+                    curr_read = (umi, chrom, strandedness, five_prime_start_pos)
+                    if curr_read in seen_reads:
+                        dups_removed += 1
+                        continue
+                    else:
+                        unique_reads += 1
+                        newSAM.write(curr_line)
+                        newSAM.write("\n")
+                        seen_reads.add(curr_read)
 
-print(f'Header Lines: {header_lines}, Unique Reads: {unique_reads}, Wrong UMIs: {wrong_umis}, Duplicates Removed: {dups_removed}')
+    with open("deduplication_stats.txt", "w") as stats:
+        stats.write(f'Dedupder Stats from {args.file}\nHeader Lines: {header_lines}\nUnique Reads: {unique_reads}\nWrong UMIs: {wrong_umis}\nDuplicates Removed: {dups_removed}')
+
+
+if __name__ == "__main__":
+    main()
